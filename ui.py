@@ -15,128 +15,129 @@ class SystemMonitorUI:
         self.chart_frames = {}
         self.section_frames = {}
         self.animation_step = 0
+        self.label_animations = {}
         
         self.root.title("System Monitor")
-        self.root.geometry("900x800")
+        self.root.geometry("900x600")
         self.root.resizable(True, True)
-        self.root.bind('<Configure>', self._on_window_resize)
         
         self._setup_ui()
         self._apply_theme()
         self._animate_intro()
 
     def _setup_ui(self):
-        canvas_frame = tk.Frame(self.root)
-        canvas_frame.pack(fill='both', expand=True)
+        # Create main container with two columns (no scroll)
+        self.main_container = tk.Frame(self.root)
+        self.main_container.pack(fill='both', expand=True, padx=12, pady=12)
         
-        self.canvas = tk.Canvas(canvas_frame, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(canvas_frame, orient='vertical', command=self.canvas.yview)
-        self.scrollable_frame = tk.Frame(self.canvas)
+        # Left column
+        self.left_column = tk.Frame(self.main_container)
+        self.left_column.pack(side='left', fill='both', expand=True, padx=(0, 8))
         
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        )
+        # Right column
+        self.right_column = tk.Frame(self.main_container)
+        self.right_column.pack(side='right', fill='both', expand=True, padx=(8, 0))
         
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        self.canvas.configure(yscrollcommand=scrollbar.set)
+        # Create sections in left column
+        self._create_section_in_container("CPU", 'cpu_section', self.left_column, has_chart=True)
+        self._create_section_in_container("GPU", 'gpu_section', self.left_column, has_chart=True)
         
-        self.canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        # Create sections in right column
+        self._create_section_in_container("Memory (RAM)", 'ram_section', self.right_column, has_chart=True)
+        self._create_section_in_container("Network", 'network_section', self.right_column, has_chart=True)
         
-        self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel)
-        
-        self._create_header()
-        self._create_cpu_section()
-        self._create_ram_section()
-        self._create_disk_section()
-        self._create_network_section()
+        # Create disk section (full width at bottom)
+        self.disk_container = tk.Frame(self.root)
+        self.disk_container.pack(fill='x', padx=12, pady=(0, 12))
+        self._create_section_in_container("Disk", 'disk_section', self.disk_container, has_chart=False)
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
-    def _on_window_resize(self, event):
+    def _create_header(self):
         pass
 
-    def _create_header(self):
-        header_frame = tk.Frame(self.scrollable_frame)
-        header_frame.pack(fill='x', pady=(8, 12), padx=8)
-        
-        title_label = tk.Label(header_frame, text="System Monitor", font=('Arial', 16, 'bold'))
-        title_label.pack(side='left')
-        
-        self.theme_button = tk.Button(header_frame, text="☀️ Light Mode", command=self._toggle_theme, 
-                                       width=12, font=('Arial', 9), cursor='hand2',
-                                       relief='raised', bd=1)
-        self.theme_button.pack(side='right')
-        self.labels['theme_button'] = self.theme_button
-        
-        self._setup_button_hover(self.theme_button)
-
-    def _create_cpu_section(self):
-        section_frame = self._create_section("CPU", 'cpu_section')
-        
-        self.labels['cpu_label'] = tk.Label(section_frame, text="CPU: 0.0%", font=('Arial', 10, 'bold'))
-        self.labels['cpu_label'].pack(anchor='w', pady=(0, 8))
-        
-        chart_frame = tk.Frame(section_frame)
-        chart_frame.pack(fill='both', expand=False, pady=(0, 8))
-        chart_frame.configure(height=140)
-        self.chart_frames['cpu'] = chart_frame
-        
-        self.chart_manager.create_cpu_chart(chart_frame, width=8, height=1.4)
-
-    def _create_ram_section(self):
-        section_frame = self._create_section("Memory (RAM)", 'ram_section')
-        
-        self.labels['ram_label'] = tk.Label(section_frame, text="RAM: 0.0 / 0.0 GB (0.0%)", 
-                                            font=('Arial', 10, 'bold'))
-        self.labels['ram_label'].pack(anchor='w', pady=(0, 8))
-        
-        chart_frame = tk.Frame(section_frame)
-        chart_frame.pack(fill='both', expand=False, pady=(0, 8))
-        chart_frame.configure(height=140)
-        self.chart_frames['ram'] = chart_frame
-        
-        self.chart_manager.create_ram_chart(chart_frame, width=8, height=1.4)
-
-    def _create_disk_section(self):
-        section_frame = self._create_section("Disk", 'disk_section')
-        
-        self.labels['disk_label'] = tk.Label(section_frame, text="Disk: 0.0%", font=('Arial', 10, 'bold'))
-        self.labels['disk_label'].pack(anchor='w')
-
-    def _create_network_section(self):
-        section_frame = self._create_section("Network", 'network_section')
-        
-        stats_frame = tk.Frame(section_frame)
-        stats_frame.pack(fill='x', pady=(0, 8))
-        
-        self.labels['net_up_label'] = tk.Label(stats_frame, text="Upload: 0.00 KB/s", font=('Arial', 10, 'bold'))
-        self.labels['net_up_label'].pack(anchor='w')
-        
-        self.labels['net_down_label'] = tk.Label(stats_frame, text="Download: 0.00 KB/s", font=('Arial', 10, 'bold'))
-        self.labels['net_down_label'].pack(anchor='w')
-        
-        chart_frame = tk.Frame(section_frame)
-        chart_frame.pack(fill='both', expand=False)
-        chart_frame.configure(height=140)
-        self.chart_frames['network'] = chart_frame
-        
-        self.chart_manager.create_network_chart(chart_frame, width=8, height=1.4)
-
-    def _create_section(self, title, section_key):
-        section_frame = tk.Frame(self.scrollable_frame, relief='raised', bd=1)
-        section_frame.pack(fill='x', pady=(0, 12), padx=8)
+    def _create_section_in_container(self, title, section_key, parent, has_chart=True):
+        section_frame = tk.Frame(parent, relief='raised', bd=1)
+        section_frame.pack(fill='x', pady=(0, 10))
         self.section_frames[section_key] = section_frame
         
         section_title = tk.Label(section_frame, text=title, font=('Arial', 11, 'bold'))
-        section_title.pack(anchor='w', pady=(8, 8), padx=8)
+        section_title.pack(anchor='w', pady=(6, 6), padx=6)
         
         content_frame = tk.Frame(section_frame)
-        content_frame.pack(fill='x', padx=8, pady=(0, 8))
+        content_frame.pack(fill='x', padx=6, pady=(0, 6))
         
-        return content_frame
+        if section_key == 'cpu_section':
+            self.labels['cpu_label'] = tk.Label(content_frame, text="CPU: 0.0%", font=('Arial', 10, 'bold'))
+            self.labels['cpu_label'].pack(anchor='w', pady=(6, 4))
+            self.label_animations['cpu_label'] = {'current': '0.0', 'target': '0.0'}
+            if has_chart:
+                chart_frame = tk.Frame(content_frame)
+                chart_frame.pack(fill='both', expand=False, pady=(0, 0))
+                chart_frame.configure(height=80)
+                self.chart_frames['cpu'] = chart_frame
+                self.chart_manager.create_cpu_chart(chart_frame, width=3.5, height=0.85)
+        
+        elif section_key == 'ram_section':
+            self.labels['ram_label'] = tk.Label(content_frame, text="RAM: 0.0 / 0.0 GB (0.0%)", 
+                                                font=('Arial', 10, 'bold'))
+            self.labels['ram_label'].pack(anchor='w', pady=(0, 4))
+            self.label_animations['ram_label'] = {'current': '0.0', 'target': '0.0'}
+            if has_chart:
+                chart_frame = tk.Frame(content_frame)
+                chart_frame.pack(fill='both', expand=False, pady=(0, 0))
+                chart_frame.configure(height=80)
+                self.chart_frames['ram'] = chart_frame
+                self.chart_manager.create_ram_chart(chart_frame, width=3.5, height=0.85)
+        
+        elif section_key == 'gpu_section':
+            self.labels['gpu_label'] = tk.Label(content_frame, text="GPU: 0.0% / No GPU", font=('Arial', 10, 'bold'))
+            self.labels['gpu_label'].pack(anchor='w', pady=(0, 4))
+            self.label_animations['gpu_label'] = {'current': '0.0', 'target': '0.0'}
+            if has_chart:
+                chart_frame = tk.Frame(content_frame)
+                chart_frame.pack(fill='both', expand=False, pady=(0, 0))
+                chart_frame.configure(height=80)
+                self.chart_frames['gpu'] = chart_frame
+                self.chart_manager.create_gpu_chart(chart_frame, width=3.5, height=0.85)
+        
+        elif section_key == 'disk_section':
+            self.labels['disk_label'] = tk.Label(content_frame, text="Disk: 0.0%", font=('Arial', 10, 'bold'))
+            self.labels['disk_label'].pack(anchor='w')
+            self.label_animations['disk_label'] = {'current': '0.0', 'target': '0.0'}
+        
+        elif section_key == 'network_section':
+            stats_frame = tk.Frame(content_frame)
+            stats_frame.pack(fill='x', pady=(0, 4))
+            self.labels['net_up_label'] = tk.Label(stats_frame, text="Upload: 0.00 KB/s", font=('Arial', 10, 'bold'))
+            self.labels['net_up_label'].pack(anchor='w')
+            self.labels['net_down_label'] = tk.Label(stats_frame, text="Download: 0.00 KB/s", font=('Arial', 10, 'bold'))
+            self.labels['net_down_label'].pack(anchor='w')
+            if has_chart:
+                chart_frame = tk.Frame(content_frame)
+                chart_frame.pack(fill='both', expand=False, pady=(0, 0))
+                chart_frame.configure(height=80)
+                self.chart_frames['network'] = chart_frame
+                self.chart_manager.create_network_chart(chart_frame, width=3.5, height=0.85)
+
+    def _create_cpu_section(self):
+        pass
+
+    def _create_ram_section(self):
+        pass
+
+    def _create_gpu_section(self):
+        pass
+
+    def _create_network_section(self):
+        pass
+
+    def _create_disk_section(self):
+        pass
+
+    def _create_section(self, title, section_key):
+        pass
 
     def update_display(self):
         self.stats_manager.update(MAX_HISTORY)
@@ -149,6 +150,10 @@ class SystemMonitorUI:
         self.labels['ram_label'].config(text=f"RAM: {used_gb:.2f} / {total_gb:.2f} GB ({ram_percent:.1f}%)")
         self.chart_manager.update_ram_chart(self.stats_manager.ram_history)
         
+        gpu_percent, gpu_name = self.stats_manager.get_gpu_info()
+        self.labels['gpu_label'].config(text=f"GPU: {gpu_percent:.1f}% / {gpu_name}")
+        self.chart_manager.update_gpu_chart(self.stats_manager.gpu_history)
+        
         disk_percent = self.stats_manager.get_disk_info()
         self.labels['disk_label'].config(text=f"Disk: {disk_percent:.1f}%")
         
@@ -160,30 +165,21 @@ class SystemMonitorUI:
         self.chart_manager.update_network_chart(self.stats_manager.net_up_history, 
                                                 self.stats_manager.net_down_history)
 
-    def _toggle_theme(self):
-        self.theme = 'light' if self.theme == 'dark' else 'dark'
-        self.chart_manager.set_theme(self.theme)
-        self._apply_theme()
-        self.update_display()
-
     def _apply_theme(self):
         theme_colors = THEMES[self.theme]
         
         self.root.config(bg=theme_colors['bg'])
-        self.canvas.config(bg=theme_colors['bg'])
-        self.scrollable_frame.config(bg=theme_colors['bg'])
+        self.main_container.config(bg=theme_colors['bg'])
+        self.left_column.config(bg=theme_colors['bg'])
+        self.right_column.config(bg=theme_colors['bg'])
+        self.disk_container.config(bg=theme_colors['bg'])
         
         for section_key, frame in self.section_frames.items():
             self._apply_section_theme(frame, theme_colors)
         
         for label_key, label in self.labels.items():
             if isinstance(label, tk.Label):
-                label.config(bg=theme_colors['bg'], fg=theme_colors['fg'])
-            elif isinstance(label, tk.Button):
-                label.config(bg=theme_colors['accent'], fg=theme_colors['fg'], activebackground=theme_colors['border'])
-        
-        button_text = "🌙 Dark Mode" if self.theme == 'light' else "☀️ Light Mode"
-        self.labels['theme_button'].config(text=button_text)
+                label.config(bg=theme_colors['section_bg'], fg=theme_colors['fg'])
 
     def _apply_section_theme(self, frame, theme_colors):
         frame.config(bg=theme_colors['section_bg'], borderwidth=1)
@@ -209,18 +205,20 @@ class SystemMonitorUI:
         if self.animation_step < len(self.section_frames):
             section_key = list(self.section_frames.keys())[self.animation_step]
             frame = self.section_frames[section_key]
-            frame.pack_configure(pady=(0, 12))
+            frame.pack_configure(pady=(0, 10))
             self.animation_step += 1
-            self.root.after(50, self._animate_sections)
+            self.root.after(30, self._animate_sections)  # Faster animation
 
-    def _setup_button_hover(self, button):
-        def on_enter(event):
-            theme_colors = THEMES[self.theme]
-            button.config(bg=theme_colors['accent_hover'])
+    def _animate_label(self, label_key, new_value):
+        if label_key not in self.label_animations:
+            self.labels[label_key].config(text=new_value)
+            return
         
-        def on_leave(event):
-            theme_colors = THEMES[self.theme]
-            button.config(bg=theme_colors['accent'])
+        self.label_animations[label_key]['target'] = new_value
+        self._update_label_animation(label_key)
+
+    def _update_label_animation(self, label_key):
+        self.labels[label_key].config(text=self.label_animations[label_key]['target'])
         
         button.bind('<Enter>', on_enter)
         button.bind('<Leave>', on_leave)

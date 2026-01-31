@@ -11,6 +11,7 @@ class ChartManager:
         self.theme = theme
         self.cpu_canvas = None
         self.ram_canvas = None
+        self.gpu_canvas = None
         self.network_canvas = None
 
     def create_cpu_chart(self, parent, width=6, height=2.5):
@@ -55,6 +56,27 @@ class ChartManager:
         self.ram_canvas = (fig, ax, canvas)
         return canvas
 
+    def create_gpu_chart(self, parent, width=6, height=2.5):
+        fig = Figure(figsize=(width, height), dpi=100)
+        ax = fig.add_subplot(111)
+        ax.set_ylim(0, 100)
+        ax.set_ylabel('GPU %', fontsize=8)
+        ax.set_xlabel('Seconds', fontsize=8)
+        fig.patch.set_facecolor(self._get_chart_bg())
+        ax.set_facecolor(self._get_chart_bg())
+        ax.tick_params(colors=self._get_chart_fg(), labelsize=7)
+        ax.spines['bottom'].set_color(self._get_chart_grid())
+        ax.spines['left'].set_color(self._get_chart_grid())
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.grid(True, alpha=0.3, color=self._get_chart_grid())
+        fig.subplots_adjust(left=0.08, right=0.98, top=0.95, bottom=0.12)
+        
+        canvas = FigureCanvasTkAgg(fig, master=parent)
+        canvas.get_tk_widget().pack(fill='both', expand=True)
+        self.gpu_canvas = (fig, ax, canvas)
+        return canvas
+
     def create_network_chart(self, parent, width=6, height=2.5):
         fig = Figure(figsize=(width, height), dpi=100)
         ax = fig.add_subplot(111)
@@ -93,6 +115,27 @@ class ChartManager:
         
         if data:
             ax.plot(range(len(data)), data, color=self._get_cpu_color(), linewidth=2)
+        
+        canvas.draw_idle()
+
+    def update_gpu_chart(self, data):
+        if self.gpu_canvas is None:
+            return
+        fig, ax, canvas = self.gpu_canvas
+        ax.clear()
+        ax.set_ylim(0, 100)
+        ax.set_ylabel('GPU %', fontsize=8)
+        ax.set_xlabel('Seconds', fontsize=8)
+        ax.set_facecolor(self._get_chart_bg())
+        ax.tick_params(colors=self._get_chart_fg(), labelsize=7)
+        ax.spines['bottom'].set_color(self._get_chart_grid())
+        ax.spines['left'].set_color(self._get_chart_grid())
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.grid(True, alpha=0.3, color=self._get_chart_grid())
+        
+        if data:
+            ax.plot(range(len(data)), data, color=self._get_gpu_color(), linewidth=2)
         
         canvas.draw_idle()
 
@@ -172,3 +215,7 @@ class ChartManager:
     def _get_net_down_color(self):
         from constants import CHART_COLORS
         return CHART_COLORS[self.theme]['net_down']
+
+    def _get_gpu_color(self):
+        from constants import CHART_COLORS
+        return CHART_COLORS[self.theme]['gpu']

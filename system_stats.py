@@ -7,13 +7,28 @@ class SystemStats:
     def __init__(self):
         self.cpu_history = []
         self.ram_history = []
+        self.gpu_history = []
         self.net_up_history = []
         self.net_down_history = []
         self.last_net_io = None
+        self.gpu_available = self._check_gpu_availability()
+
+    def _check_gpu_availability(self):
+        try:
+            import GPUtil
+            return True
+        except ImportError:
+            try:
+                if psutil.virtual_memory():
+                    pass
+            except:
+                pass
+            return False
 
     def update(self, max_history=60):
         self._update_cpu(max_history)
         self._update_ram(max_history)
+        self._update_gpu(max_history)
         self._update_network(max_history)
 
     def _update_cpu(self, max_history):
@@ -28,6 +43,22 @@ class SystemStats:
         self.ram_history.append(ram_percent)
         if len(self.ram_history) > max_history:
             self.ram_history.pop(0)
+
+    def _update_gpu(self, max_history):
+        gpu_percent = self._get_gpu_usage()
+        self.gpu_history.append(gpu_percent)
+        if len(self.gpu_history) > max_history:
+            self.gpu_history.pop(0)
+
+    def _get_gpu_usage(self):
+        try:
+            import GPUtil
+            gpus = GPUtil.getGPUs()
+            if gpus:
+                return gpus[0].load * 100
+        except:
+            pass
+        return 0
 
     def _update_network(self, max_history):
         net_io = psutil.net_io_counters()
@@ -62,6 +93,21 @@ class SystemStats:
         total_gb = ram.total / (1024 ** 3)
         percent = ram.percent
         return used_gb, total_gb, percent
+
+    def get_gpu_info(self):
+        if not self.gpu_available:
+            return 0, "No GPU"
+        
+        try:
+            import GPUtil
+            gpus = GPUtil.getGPUs()
+            if gpus:
+                gpu = gpus[0]
+                return gpu.load * 100, gpu.name
+        except:
+            pass
+        
+        return 0, "No GPU"
 
     def get_disk_info(self):
         disk = psutil.disk_usage('/')

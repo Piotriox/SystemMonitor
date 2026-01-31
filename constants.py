@@ -29,12 +29,14 @@ CHART_COLORS = {
     'dark': {
         'cpu': '#ff6b6b',
         'ram': '#4ecdc4',
+        'gpu': '#a78bfa',
         'net_up': '#45b7d1',
         'net_down': '#f7dc6f',
     },
     'light': {
         'cpu': '#e74c3c',
         'ram': '#1abc9c',
+        'gpu': '#8b5cf6',
         'net_up': '#3498db',
         'net_down': '#f39c12',
     }
