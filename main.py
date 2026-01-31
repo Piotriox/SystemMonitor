@@ -25,6 +25,10 @@ from constants import UPDATE_INTERVAL
 def main():
     root = tk.Tk()
     
+    # İkonu ayarla
+    root.iconbitmap('SystemMonitorLogo.ico')
+    root.title('System Monitor')
+    
     stats_manager = SystemStats()
     chart_manager = ChartManager(theme='dark')
     ui = SystemMonitorUI(root, stats_manager, chart_manager)
