@@ -14,7 +14,6 @@ This project is designed as a local desktop tool (no server, no cloud, no tracki
 - Disk usage overview
 - Network upload & download speed
 - Live updating charts (last 60 seconds)
-- Dark / Light theme toggle
 - Clean and minimal UI
 - Runs fully offline
 - PyInstaller compatible (can be built as `.exe`)
