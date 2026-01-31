@@ -2,6 +2,7 @@
 
 import tkinter as tk
 import sys
+import os
 
 try:
     import psutil
@@ -25,8 +26,16 @@ from constants import UPDATE_INTERVAL
 def main():
     root = tk.Tk()
     
-    # İkonu ayarla
-    root.iconbitmap('SystemMonitorLogo.ico')
+    # İkonu ayarla - PyInstaller için mutlak yol
+    if getattr(sys, 'frozen', False):
+        # PyInstaller ile paketlenmiş durumda
+        icon_path = os.path.join(sys._MEIPASS, 'SystemMonitorLogo.ico')
+    else:
+        # Development modunda
+        icon_path = os.path.join(os.path.dirname(__file__), 'SystemMonitorLogo.ico')
+    
+    if os.path.exists(icon_path):
+        root.iconbitmap(icon_path)
     root.title('System Monitor')
     
     stats_manager = SystemStats()
