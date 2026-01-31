@@ -1,0 +1,18 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment (if any)
+venv/
+.env/
+
+# Build / dist
+build/
+dist/
+*.spec
+
+# OS
+.DS_Store
+Thumbs.db
