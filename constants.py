@@ -2,26 +2,26 @@
 
 THEMES = {
     'dark': {
-        'bg': '#1e1e1e',
-        'fg': '#e0e0e0',
-        'accent': '#2d2d2d',
-        'accent_hover': '#3a3a3a',
-        'chart_bg': '#2a2a2a',
-        'chart_grid': '#404040',
-        'chart_fg': '#e0e0e0',
-        'border': '#404040',
-        'section_bg': '#252525',
+        'bg': '#0f172a',           # overall background (slate-900 style)
+        'fg': '#e5e7eb',           # main text (gray-200)
+        'accent': '#1e293b',       # cards background (slate-800)
+        'accent_hover': '#334155', # hover state
+        'chart_bg': '#020617',     # chart background (slate-950)
+        'chart_grid': '#1f2937',   # subtle grid
+        'chart_fg': '#e5e7eb',     # axis text
+        'border': '#111827',       # card border
+        'section_bg': '#020617',   # inner section background
     },
     'light': {
-        'bg': '#f5f5f5',
-        'fg': '#1a1a1a',
-        'accent': '#e8e8e8',
-        'accent_hover': '#d8d8d8',
+        'bg': '#f3f4f6',           # overall background (gray-100)
+        'fg': '#111827',           # main text (gray-900)
+        'accent': '#ffffff',       # cards background (white)
+        'accent_hover': '#e5e7eb', # hover state
         'chart_bg': '#ffffff',
-        'chart_grid': '#d0d0d0',
-        'chart_fg': '#1a1a1a',
-        'border': '#d0d0d0',
-        'section_bg': '#fafafa',
+        'chart_grid': '#d1d5db',
+        'chart_fg': '#111827',
+        'border': '#e5e7eb',
+        'section_bg': '#ffffff',
     }
 }
 

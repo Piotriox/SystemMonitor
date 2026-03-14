@@ -26,12 +26,12 @@ from constants import UPDATE_INTERVAL
 def main():
     root = tk.Tk()
     
-    # İkonu ayarla - PyInstaller için mutlak yol
+    # Set application icon - absolute path for PyInstaller
     if getattr(sys, 'frozen', False):
-        # PyInstaller ile paketlenmiş durumda
+        # Running as a bundled executable with PyInstaller
         icon_path = os.path.join(sys._MEIPASS, 'SystemMonitorLogo.ico')
     else:
-        # Development modunda
+        # Running in development mode from source
         icon_path = os.path.join(os.path.dirname(__file__), 'SystemMonitorLogo.ico')
     
     if os.path.exists(icon_path):
