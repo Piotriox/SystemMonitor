@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    systemmonitor_lib::run()
+    systemwatch_lib::run()
 }

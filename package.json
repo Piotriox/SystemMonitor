@@ -1,10 +1,14 @@
 {
-  "name": "systemmonitor",
+  "name": "systemwatch",
   "private": true,
   "version": "1.3.0",
   "type": "module",
+  "description": "A lightweight desktop system monitoring application",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "clean": "cargo clean && rm -rf src-tauri/target && rm -rf src-tauri/Cargo.lock"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

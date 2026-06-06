@@ -9,6 +9,126 @@
   </head>
 
   <body>
-    
+    <header class="topbar">
+      <!-- Two selection boxes: switch between Resources and Processes. -->
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-view="resources" type="button">
+          <span class="tab-icon" data-icon="activity"></span>
+          <span>Resources</span>
+        </button>
+        <button class="tab" data-view="processes" type="button">
+          <span class="tab-icon" data-icon="list"></span>
+          <span>Processes</span>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Resources view -->
+      <section id="view-resources" class="view active">
+        <div class="cards">
+          <!-- CPU -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" data-icon="cpu"></span>
+              <h2>CPU</h2>
+              <span class="card-value" id="cpu-usage">--%</span>
+            </div>
+            <div class="card-sub" id="cpu-model">Detecting...</div>
+            <div class="card-sub" id="cpu-vendor">-- --</div>
+            <canvas class="chart" id="cpu-chart" width="320" height="72"></canvas>
+            <div class="meta">
+              <span id="cpu-cores">-- cores</span>
+              <span id="cpu-phys-cores">-- phys</span>
+              <span id="cpu-freq">-- MHz</span>
+              <span id="cpu-maxfreq">-- Max</span>
+              <span id="cpu-temp">-- °C</span>
+            </div>
+          </article>
+
+          <!-- GPU -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" data-icon="gpu"></span>
+              <h2>GPU</h2>
+            </div>
+            <div class="gpu-name" id="gpu-name">Detecting...</div>
+            <div class="meta">
+              <span id="gpu-vendor">-- --</span>
+              <span id="gpu-vram">-- VRAM</span>
+              <span id="gpu-driver">-- Driver</span>
+            </div>
+            <div class="card-note">Live usage is not available for GPU.</div>
+          </article>
+
+          <!-- RAM -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" data-icon="ram"></span>
+              <h2>Memory</h2>
+              <span class="card-value" id="ram-usage">--%</span>
+            </div>
+            <div class="bar"><div class="bar-fill" id="ram-bar"></div></div>
+            <div class="meta">
+              <span id="ram-used">-- / --</span>
+              <span id="ram-available">-- free</span>
+              <span id="ram-speed">-- MHz</span>
+              <span id="ram-type">-- --</span>
+            </div>
+          </article>
+
+          <!-- Storage -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" data-icon="storage"></span>
+              <h2>Storage</h2>
+            </div>
+            <div class="disk-list" id="disk-list"></div>
+          </article>
+
+          <!-- Network -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-icon" data-icon="network"></span>
+              <h2>Network</h2>
+            </div>
+            <div class="net-rates">
+              <div class="net-rate">
+                <span class="net-icon" data-icon="download"></span>
+                <span id="net-down">-- /s</span>
+              </div>
+              <div class="net-rate">
+                <span class="net-icon" data-icon="upload"></span>
+                <span id="net-up">-- /s</span>
+              </div>
+            </div>
+            <canvas class="chart" id="net-chart" width="320" height="72"></canvas>
+            <div class="iface-list" id="iface-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Processes view -->
+      <section id="view-processes" class="view">
+        <div class="table-toolbar">
+          <input type="text" id="proc-filter" placeholder="Filter by name..." />
+          <span class="proc-count" id="proc-count">0 processes</span>
+        </div>
+        <div class="table-wrap">
+          <table class="proc-table">
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th>Name</th>
+                <th>CPU %</th>
+                <th>Memory</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="proc-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   </body>
 </html>

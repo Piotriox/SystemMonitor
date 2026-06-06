@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "systemmonitor",
-  "version": "0.1.0",
-  "identifier": "com.systemmonitor.app",
+  "productName": "SystemWatch",
+  "version": "1.3.0",
+  "identifier": "com.systemwatch.app",
   "build": {
     "frontendDist": "../src"
   },
@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "systemmonitor",
+        "title": "SystemWatch",
         "width": 800,
         "height": 600
       }
