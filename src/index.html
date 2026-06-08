@@ -10,17 +10,22 @@
 
   <body>
     <header class="topbar">
-      <!-- Two selection boxes: switch between Resources and Processes. -->
-      <nav class="tabs" id="tabs">
-        <button class="tab active" data-view="resources" type="button">
-          <span class="tab-icon" data-icon="activity"></span>
-          <span>Resources</span>
-        </button>
-        <button class="tab" data-view="processes" type="button">
-          <span class="tab-icon" data-icon="list"></span>
-          <span>Processes</span>
-        </button>
-      </nav>
+      <div class="topbar-left">
+        <div class="brand" data-icon="activity"></div>
+        <nav class="tabs" id="tabs">
+          <button class="tab active" data-view="resources" type="button">
+            <span class="tab-icon" data-icon="activity"></span>
+            <span>Resources</span>
+          </button>
+          <button class="tab" data-view="processes" type="button">
+            <span class="tab-icon" data-icon="list"></span>
+            <span>Processes</span>
+          </button>
+        </nav>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle theme">
+        <span data-icon="activity"></span>
+      </button>
     </header>
 
     <main>
@@ -74,6 +79,34 @@
               <span id="ram-available">-- free</span>
               <span id="ram-speed">-- MHz</span>
               <span id="ram-type">-- --</span>
+            </div>
+          </article>
+
+          <!-- Battery (if available) -->
+          <article class="card" id="battery-card" style="display: none;">
+            <div class="card-head">
+              <span class="card-icon" data-icon="activity"></span>
+              <h2>Battery</h2>
+              <span class="card-value" id="battery-percent">--%</span>
+            </div>
+            <div class="bar"><div class="bar-fill" id="battery-bar"></div></div>
+            <div class="battery-status">
+              <div class="battery-item">
+                <span class="battery-label">Status:</span>
+                <span class="battery-value" id="battery-charging">--</span>
+              </div>
+              <div class="battery-item">
+                <span class="battery-label">Health:</span>
+                <span class="battery-value" id="battery-health">--</span>
+              </div>
+              <div class="battery-item">
+                <span class="battery-label">Capacity:</span>
+                <span class="battery-value" id="battery-capacity">--</span>
+              </div>
+              <div class="battery-item">
+                <span class="battery-label">Model:</span>
+                <span class="battery-value" id="battery-model">--</span>
+              </div>
             </div>
           </article>
 

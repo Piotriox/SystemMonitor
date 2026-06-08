@@ -13,6 +13,7 @@ Monitor real-time CPU, GPU, RAM, disk, and network usage with live charts and de
 - Memory: Usage %, used/total, available space, speed (MHz), RAM type
 - Storage: Disk usage, type (SSD/HDD), model, file system
 - Network: Download/upload rates, interface details, live chart
+- Battery: Battery percentage, model and more
 
 ---
 

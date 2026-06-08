@@ -9,13 +9,37 @@ use std::time::Instant;
 use serde::Serialize;
 use sysinfo::{Disks, Networks, ProcessesToUpdate, System};
 
+/// Custom error type for SystemWatch operations
+#[derive(Debug, Serialize)]
+pub struct SystemWatchError {
+    message: String,
+}
+
+impl SystemWatchError {
+    pub fn new(msg: impl Into<String>) -> Self {
+        SystemWatchError {
+            message: msg.into(),
+        }
+    }
+}
+
+impl std::fmt::Display for SystemWatchError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for SystemWatchError {}
+
+pub type SystemResult<T> = Result<T, SystemWatchError>;
+
 // Long-lived, shared monitoring state.
 struct MonitorState {
     sys: Mutex<System>,
     networks: Mutex<Networks>,
     last_net_instant: Mutex<Instant>,
-    // GPU name is detected once (it does not change at runtime) and cached.
     gpu_name: Mutex<Option<String>>,
+    gpu_last_refresh: Mutex<Instant>,
 }
 
 #[derive(Serialize)]
@@ -76,10 +100,21 @@ struct NetworkInfo {
 }
 
 #[derive(Serialize)]
+struct BatteryInfo {
+    is_present: bool,
+    percentage: f32,
+    is_charging: bool,
+    health: Option<f32>,
+    capacity: Option<f32>,
+    model: Option<String>,
+}
+
+#[derive(Serialize)]
 struct Resources {
     cpu: CpuInfo,
     gpu: GpuInfo,
     memory: MemoryInfo,
+    battery: Option<BatteryInfo>,
     disks: Vec<DiskInfo>,
     networks: Vec<NetworkInfo>,
 }
@@ -224,6 +259,7 @@ fn get_resources(state: tauri::State<MonitorState>) -> Resources {
         cpu,
         gpu,
         memory,
+        battery: detect_battery_info(),
         disks,
         networks,
     }
@@ -336,6 +372,147 @@ fn extract_cpu_vendor(model: &str) -> String {
     } else {
         "Unknown".to_string()
     }
+}
+
+// Detect battery information (platform-specific).
+// Platform-specific battery detection
+#[cfg(target_os = "linux")]
+fn detect_battery_info() -> Option<BatteryInfo> {
+    use std::fs;
+    use std::path::Path;
+    
+    let battery_path = [
+        "/sys/class/power_supply/BAT0",
+        "/sys/class/power_supply/BAT1",
+        "/sys/class/power_supply/battery",
+    ]
+    .iter()
+    .find(|p| Path::new(*p).exists())
+    .copied()?;
+
+    let read_file = |file: &str| -> Option<String> {
+        fs::read_to_string(format!("{}/{}", battery_path, file)).ok()
+    };
+
+    let energy_now = read_file("energy_now")
+        .and_then(|s| s.trim().parse::<f32>().ok())?;
+    let energy_full = read_file("energy_full")
+        .and_then(|s| s.trim().parse::<f32>().ok())?;
+    let energy_full_design = read_file("energy_full_design")
+        .and_then(|s| s.trim().parse::<f32>().ok());
+
+    let percentage = if energy_full > 0.0 {
+        (energy_now / energy_full) * 100.0
+    } else {
+        0.0
+    };
+
+    let health = energy_full_design.and_then(|full_design| {
+        if full_design > 0.0 {
+            Some((energy_full / full_design) * 100.0)
+        } else {
+            None
+        }
+    });
+
+    let status_str = read_file("status").unwrap_or_default();
+    let is_charging = status_str.to_lowercase().contains("charging");
+    let model = read_file("model_name");
+
+    Some(BatteryInfo {
+        is_present: true,
+        percentage: percentage.clamp(0.0, 100.0),
+        is_charging,
+        health: health.map(|h| h.clamp(0.0, 100.0)),
+        capacity: energy_full_design.map(|d| ((energy_full / d) * 100.0).clamp(0.0, 100.0)),
+        model: model.map(|s| s.trim().to_string()),
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn detect_battery_info() -> Option<BatteryInfo> {
+    use std::os::windows::process::CommandExt;
+    use std::process::Command;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+    if let Ok(output) = Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            "Get-CimInstance Win32_Battery | Select-Object -First 1 | Select-Object EstimatedChargeRemaining, BatteryStatus, Name",
+        ])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()
+    {
+        if let Ok(text) = String::from_utf8(output.stdout) {
+            let mut percentage = 0.0;
+            let mut is_charging = false;
+            let mut model = None;
+
+            for line in text.lines() {
+                if let Some(val) = line.split(':').nth(1) {
+                    let val = val.trim();
+                    if line.contains("EstimatedChargeRemaining") {
+                        percentage = val.parse::<f32>().unwrap_or(0.0);
+                    } else if line.contains("BatteryStatus") {
+                        is_charging = val == "2";
+                    } else if line.contains("Name") {
+                        model = Some(val.to_string());
+                    }
+                }
+            }
+
+            return Some(BatteryInfo {
+                is_present: percentage > 0.0 || model.is_some(),
+                percentage: percentage.clamp(0.0, 100.0),
+                is_charging,
+                health: None,
+                capacity: None,
+                model,
+            });
+        }
+    }
+
+    None
+}
+
+#[cfg(target_os = "macos")]
+fn detect_battery_info() -> Option<BatteryInfo> {
+    use std::process::Command;
+
+    if let Ok(output) = Command::new("sh")
+        .args(["-c", "pmset -g batt | grep -Eo '\\d+%|charging|discharging'"])
+        .output()
+    {
+        if let Ok(text) = String::from_utf8(output.stdout) {
+            let mut percentage = 0.0;
+            let mut is_charging = false;
+
+            for part in text.split_whitespace() {
+                if part.ends_with('%') {
+                    percentage = part.trim_end_matches('%').parse::<f32>().unwrap_or(0.0);
+                } else if part.to_lowercase() == "charging" {
+                    is_charging = true;
+                }
+            }
+
+            return Some(BatteryInfo {
+                is_present: percentage > 0.0,
+                percentage: percentage.clamp(0.0, 100.0),
+                is_charging,
+                health: None,
+                capacity: None,
+                model: None,
+            });
+        }
+    }
+
+    None
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+fn detect_battery_info() -> Option<BatteryInfo> {
+    None
 }
 
 // Detect CPU temperature from system components.
@@ -558,6 +735,7 @@ pub fn run() {
         networks: Mutex::new(Networks::new_with_refreshed_list()),
         last_net_instant: Mutex::new(Instant::now()),
         gpu_name: Mutex::new(None),
+        gpu_last_refresh: Mutex::new(Instant::now()),
     };
 
     tauri::Builder::default()

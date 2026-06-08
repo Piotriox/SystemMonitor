@@ -1,14 +1,29 @@
 :root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --panel-2: #1f232c;
-  --border: #2a2f3a;
-  --text: #e6e9ef;
-  --muted: #9aa3b2;
-  --accent: #4f8cff;
-  --accent-2: #34d399;
-  --danger: #f87171;
+  /* Dark Blue Theme (default) */
+  --bg: #0a0e18;
+  --panel: #131829;
+  --panel-2: #1a202f;
+  --border: #2a3447;
+  --text: #e3e8f0;
+  --muted: #8a95aa;
+  --accent: #3b7dd9;
+  --success: #10b981;
+  --danger: #ef4444;
   --radius: 12px;
+  --transition: all 0.2s ease;
+}
+
+body.light-theme {
+  /* Light Blue Theme */
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --panel-2: #eef2f7;
+  --border: #d4dce8;
+  --text: #1a2332;
+  --muted: #6b7a91;
+  --accent: #2563eb;
+  --success: #059669;
+  --danger: #dc2626;
 }
 
 * {
@@ -27,12 +42,14 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   font-size: 14px;
+  transition: background 0.3s, color 0.3s;
 }
 
 /* Top bar */
 .topbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--border);
@@ -40,35 +57,80 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+  transition: var(--transition);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .brand {
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.brand svg {
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+  transition: var(--transition);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text);
+  padding: 0;
+  font-size: 16px;
+}
+
+.theme-toggle:hover {
+  background: var(--border);
+  transform: scale(1.05);
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Selection boxes (tabs) */
 .tabs {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   background: var(--panel-2);
-  padding: 4px;
+  padding: 6px;
   border-radius: 10px;
   border: 1px solid var(--border);
+  transition: var(--transition);
 }
 
 .tab {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 12px 24px;
   border: none;
   background: transparent;
   color: var(--muted);
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.15s, color 0.15s;
+  font-size: 15px;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
 .tab:hover {
@@ -109,7 +171,7 @@ main {
 /* Resource cards */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
 }
 
@@ -117,46 +179,53 @@ main {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px;
+  transition: var(--transition);
+}
+
+.card:hover {
+  border-color: var(--accent);
 }
 
 .card-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .card-head h2 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   margin: 0;
   flex: 1;
 }
 
 .card-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   color: var(--accent);
 }
 
 .card-value {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .card-sub {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 10px;
-  min-height: 18px;
+  min-height: 21px;
+  line-height: 1.5;
 }
 
 .card-note {
   color: var(--muted);
-  font-size: 12px;
-  margin-top: 8px;
+  font-size: 13px;
+  margin-top: 10px;
+  line-height: 1.4;
 }
 
 .gpu-name {
@@ -164,49 +233,87 @@ main {
   font-weight: 600;
   margin-top: 4px;
   word-break: break-word;
+  margin-bottom: 14px;
+  color: var(--text);
 }
 
 .chart {
   width: 100%;
   height: 72px;
   display: block;
-  margin: 6px 0 10px;
+  margin: 14px 0 16px;
 }
 
 .meta {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.meta span {
+  padding: 4px 0;
 }
 
 /* Progress bars */
 .bar {
-  height: 10px;
+  height: 12px;
   background: var(--panel-2);
   border-radius: 6px;
   overflow: hidden;
-  margin: 6px 0 10px;
+  margin: 14px 0 16px;
 }
 
 .bar-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background: linear-gradient(90deg, var(--accent), var(--success));
   transition: width 0.3s ease;
+}
+
+/* Battery specific */
+.battery-status {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.battery-item {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+
+.battery-label {
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.battery-value {
+  color: var(--text);
+  font-weight: 500;
 }
 
 /* Disk list */
 .disk-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .disk {
   border-top: 1px solid var(--border);
-  padding-top: 10px;
+  padding-top: 14px;
 }
 
 .disk:first-child {
@@ -217,30 +324,44 @@ main {
 .disk-head {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  align-items: center;
 }
 
 .disk-name {
   font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.disk-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .disk-sub {
   color: var(--muted);
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 14px;
+  margin-top: 6px;
 }
 
 .disk-info {
   color: var(--muted);
-  font-size: 12px;
-  margin-top: 2px;
+  font-size: 13px;
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 /* Network */
 .net-rates {
   display: flex;
   gap: 18px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .net-rate {
@@ -249,15 +370,16 @@ main {
   gap: 6px;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  font-size: 15px;
 }
 
 .net-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .net-rate:first-child .net-icon svg {
-  color: var(--accent-2);
+  color: var(--success);
 }
 
 .net-rate:last-child .net-icon svg {
@@ -266,15 +388,17 @@ main {
 
 .iface-list {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .iface {
   display: flex;
   justify-content: space-between;
+  padding: 6px 0;
 }
 
 /* Processes table */
@@ -282,28 +406,30 @@ main {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 #proc-filter {
   flex: 1;
-  max-width: 320px;
-  padding: 8px 12px;
+  max-width: 400px;
+  padding: 10px 14px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
+  transition: var(--transition);
 }
 
 #proc-filter:focus {
   outline: none;
   border-color: var(--accent);
+  background: var(--panel-2);
 }
 
 .proc-count {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .table-wrap {
@@ -311,12 +437,14 @@ main {
   border-radius: var(--radius);
   overflow: auto;
   max-height: calc(100vh - 180px);
+  transition: var(--transition);
 }
 
 .proc-table {
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
+  background: var(--panel);
 }
 
 .proc-table thead th {
@@ -324,15 +452,17 @@ main {
   top: 0;
   background: var(--panel-2);
   text-align: left;
-  padding: 10px 12px;
-  font-size: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
 }
 
 .proc-table tbody td {
-  padding: 8px 12px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--border);
+  font-size: 14px;
 }
 
 .proc-table tbody tr:hover {
@@ -341,4 +471,6 @@ main {
 
 .proc-table td.num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: "Courier New", monospace;
 }

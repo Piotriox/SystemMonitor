@@ -7,7 +7,7 @@ const invoke =
     ? window.__TAURI__.core.invoke
     : null;
 
-// --- Inline Lucide icons (no external assets, no emoji) ---
+// --- Inline Lucide icons ---
 const LUCIDE = {
   activity:
     '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
@@ -45,6 +45,45 @@ function mountIcons() {
   });
 }
 
+// --- Theme Management ---
+function initTheme() {
+  try {
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme && typeof storedTheme === "string" && ["dark", "light"].includes(storedTheme)) {
+      applyTheme(storedTheme);
+    } else {
+      applyTheme("dark");
+    }
+  } catch (e) {
+    console.error("Theme initialization failed:", e);
+    applyTheme("dark");
+  }
+}
+
+function applyTheme(theme) {
+  if (!["dark", "light"].includes(theme)) {
+    console.warn("Invalid theme:", theme);
+    theme = "dark";
+  }
+  const isDark = theme === "dark";
+  document.body.classList.toggle("light-theme", !isDark);
+  try {
+    localStorage.setItem("theme", theme);
+  } catch (e) {
+    console.warn("localStorage write failed:", e);
+  }
+  updateThemeIcon(isDark);
+}
+
+function updateThemeIcon(isDark) {
+  const toggle = document.getElementById("theme-toggle");
+  if (!toggle) return;
+  // Sun icon for dark mode, Moon icon for light mode
+  const moonPath = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  const sunPath = '<circle cx="12" cy="12" r="5"/><line x1="12" x2="12" y1="1" y2="3"/><line x1="12" x2="12" y1="21" y2="23"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="1" x2="3" y1="12" y2="12"/><line x1="21" x2="23" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/>';
+  toggle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${isDark ? moonPath : sunPath}</svg>`;
+}
+
 // --- Formatting helpers ---
 function formatBytes(bytes) {
   if (!bytes || bytes < 0) return "0 B";
@@ -63,12 +102,15 @@ function formatRate(bytesPerSecond) {
   return formatBytes(bytesPerSecond) + "/s";
 }
 
-// --- Sparkline charts (canvas) ---
+// --- Sparkline charts (canvas) with throttling ---
 const MAX_POINTS = 60;
 const histories = {
   cpu: [],
   net: [],
 };
+
+let lastDrawTime = { cpu: 0, net: 0 };
+const DRAW_THROTTLE_MS = 200; // Redraw max every 200ms
 
 function pushHistory(key, value) {
   const arr = histories[key];
@@ -76,20 +118,31 @@ function pushHistory(key, value) {
   if (arr.length > MAX_POINTS) arr.shift();
 }
 
+function shouldThrottleDraw(key) {
+  const now = Date.now();
+  if (now - lastDrawTime[key] < DRAW_THROTTLE_MS) {
+    return true; // Skip draw
+  }
+  lastDrawTime[key] = now;
+  return false;
+}
+
 function drawSparkline(canvas, data, color, maxOverride) {
-  if (!canvas) return;
+  if (!canvas || data.length < 2) return;
+  
   const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  
   const ratio = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth || canvas.width;
   const cssHeight = canvas.clientHeight || canvas.height;
+  
   if (canvas.width !== cssWidth * ratio || canvas.height !== cssHeight * ratio) {
     canvas.width = cssWidth * ratio;
     canvas.height = cssHeight * ratio;
   }
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, cssWidth, cssHeight);
-
-  if (data.length < 2) return;
 
   const max =
     maxOverride !== undefined
@@ -101,7 +154,7 @@ function drawSparkline(canvas, data, color, maxOverride) {
   const pointX = (i) => (offset + i) * stepX;
   const pointY = (v) => cssHeight - (Math.min(v, max) / max) * cssHeight;
 
-  // Filled area.
+  // Filled area
   ctx.beginPath();
   ctx.moveTo(pointX(0), cssHeight);
   data.forEach((v, i) => ctx.lineTo(pointX(i), pointY(v)));
@@ -110,7 +163,7 @@ function drawSparkline(canvas, data, color, maxOverride) {
   ctx.fillStyle = color + "22";
   ctx.fill();
 
-  // Line.
+  // Line
   ctx.beginPath();
   data.forEach((v, i) => {
     const x = pointX(i);
@@ -142,12 +195,16 @@ function renderResources(data) {
   document.getElementById("cpu-temp").textContent =
     cpu.temperature_c !== undefined ? cpu.temperature_c.toFixed(1) + " °C" : "-- °C";
   pushHistory("cpu", cpu.usage);
-  drawSparkline(
-    document.getElementById("cpu-chart"),
-    histories.cpu,
-    "#4f8cff",
-    100
-  );
+  
+  // Throttle CPU chart redraw
+  if (!shouldThrottleDraw("cpu")) {
+    drawSparkline(
+      document.getElementById("cpu-chart"),
+      histories.cpu,
+      "#3b7dd9",
+      100
+    );
+  }
 
   // GPU
   const gpu = data.gpu;
@@ -172,6 +229,28 @@ function renderResources(data) {
     mem.speed_mhz > 0 ? mem.speed_mhz + " MHz" : "-- MHz";
   document.getElementById("ram-type").textContent =
     mem.memory_type || "-- --";
+
+  // Battery
+  if (data.battery && data.battery.is_present) {
+    const bat = data.battery;
+    const card = document.getElementById("battery-card");
+    card.style.display = "";
+    document.getElementById("battery-percent").textContent =
+      bat.percentage.toFixed(0) + "%";
+    document.getElementById("battery-bar").style.width =
+      Math.min(bat.percentage, 100) + "%";
+    document.getElementById("battery-charging").textContent = bat.is_charging
+      ? "Charging"
+      : "Discharging";
+    document.getElementById("battery-health").textContent =
+      bat.health?.toFixed(0) + "%" || "N/A";
+    document.getElementById("battery-capacity").textContent =
+      bat.capacity?.toFixed(0) + "%" || "N/A";
+    document.getElementById("battery-model").textContent =
+      bat.model || "N/A";
+  } else {
+    document.getElementById("battery-card").style.display = "none";
+  }
 
   // Storage
   const diskList = document.getElementById("disk-list");
@@ -219,11 +298,15 @@ function renderResources(data) {
   document.getElementById("net-down").textContent = formatRate(totalDown);
   document.getElementById("net-up").textContent = formatRate(totalUp);
   pushHistory("net", totalDown + totalUp);
-  drawSparkline(
-    document.getElementById("net-chart"),
-    histories.net,
-    "#34d399"
-  );
+  
+  // Throttle network chart redraw
+  if (!shouldThrottleDraw("net")) {
+    drawSparkline(
+      document.getElementById("net-chart"),
+      histories.net,
+      "#10b981"
+    );
+  }
 
   const ifaceList = document.getElementById("iface-list");
   ifaceList.innerHTML = "";
@@ -248,20 +331,46 @@ function renderResources(data) {
 // --- Processes rendering ---
 let lastProcesses = [];
 let processRowCache = new Map(); // pid -> tr element
+const MAX_CACHE_SIZE = 500; // Prevent memory leak
 
 function renderProcesses(list) {
   lastProcesses = list;
+  
+  // Clear cache if too large 
+  if (processRowCache.size > MAX_CACHE_SIZE) {
+    const entriesToRemove = processRowCache.size - MAX_CACHE_SIZE / 2;
+    let removed = 0;
+    for (const [pid, _] of processRowCache) {
+      if (removed >= entriesToRemove) break;
+      processRowCache.delete(pid);
+      removed++;
+    }
+  }
+  
   applyProcessFilter();
 }
 
 function applyProcessFilter() {
-  const filter = document
-    .getElementById("proc-filter")
-    .value.trim()
-    .toLowerCase();
+  const filterInput = document.getElementById("proc-filter");
+  if (!filterInput) return;
+  
+  let filter = filterInput.value.trim();
+  
+  // Input validation: max 100 chars, alphanumeric + spaces + common separators
+  if (filter.length > 100) {
+    filter = filter.substring(0, 100);
+    filterInput.value = filter;
+  }
+  
+  // Sanitize: only allow safe characters
+  filter = filter.replace(/[<>'"]/g, "").toLowerCase();
+  
   const body = document.getElementById("proc-body");
   const rows = filter
-    ? lastProcesses.filter((p) => p.name.toLowerCase().includes(filter))
+    ? lastProcesses.filter((p) => {
+        const name = p.name || "";
+        return name.toLowerCase().includes(filter);
+      })
     : lastProcesses;
 
   document.getElementById("proc-count").textContent =
@@ -293,10 +402,10 @@ function applyProcessFilter() {
     // Update cells
     const cells = tr.children;
     cells[0].textContent = p.pid;
-    cells[1].textContent = p.name;
-    cells[2].textContent = p.cpu_usage.toFixed(1);
-    cells[3].textContent = formatBytes(p.memory);
-    cells[4].textContent = p.status;
+    cells[1].textContent = p.name || "Unknown";
+    cells[2].textContent = p.cpu_usage ? p.cpu_usage.toFixed(1) : "0.0";
+    cells[3].textContent = formatBytes(p.memory || 0);
+    cells[4].textContent = p.status || "--";
   });
 }
 
@@ -346,7 +455,14 @@ function switchView(view) {
 
 // --- Init ---
 window.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   mountIcons();
+
+  // Theme toggle
+  document.getElementById("theme-toggle").addEventListener("click", () => {
+    const isDark = !document.body.classList.contains("light-theme");
+    applyTheme(!isDark ? "dark" : "light");
+  });
 
   document.getElementById("tabs").addEventListener("click", (e) => {
     const tab = e.target.closest(".tab");
